@@ -18,7 +18,6 @@ public class player : MonoBehaviour
     private int framesSinceGround;
     private bool jumpButtonActive;
     private bool doubleJumpActive;
-    private bool doubleJumpButtonActive;
     private bool dashButtonActive;
     private bool dashFromGround;
 
@@ -83,7 +82,6 @@ public class player : MonoBehaviour
         dashFrames = maxDashFrames;
         jumpButtonActive = false;
         doubleJumpActive = false;
-        doubleJumpButtonActive = false;
         dashButtonActive = false;
         dashFromGround = false;
         eps = 0.001f * maxSpeed / (accFrames + decFrames);
@@ -135,7 +133,6 @@ public class player : MonoBehaviour
         {
             framesSinceGround = 0;
             doubleJumpActive = true;
-            doubleJumpButtonActive = false;
         }
         else
             ++framesSinceGround;
@@ -166,14 +163,17 @@ public class player : MonoBehaviour
 
             if (isGrounded)
                 jumpFrames = 0;
-            else if (jumpFrames != 0 || framesSinceGround > maxFloatJumpFrames)
+            else if ((jumpFrames != 0 || framesSinceGround > maxFloatJumpFrames) && (dashFrames <= 0 || dashFrames >= maxDashFrames))
+            {
                 jumpFrames = maxJumpFrames;
+                Debug.Log("hi" + jumpFrames + " " + dashFrames + " " + jumpPressed);
+            }
         }
         else 
         { 
             if (jumpFrames > 0 && !midJumpDash)
                 jumpFrames = maxJumpFrames;
-            if (!isGrounded && jumpFrames != 0 || framesSinceGround > maxFloatJumpFrames && !groundDashJump)
+            if (!isGrounded && jumpFrames == 0 && !groundDashJump)
                 jumpFrames = maxJumpFrames;
         }
 

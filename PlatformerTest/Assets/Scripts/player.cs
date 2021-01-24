@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class player : MonoBehaviour
+public class Player : MonoBehaviour
 {
     private Vector2 velocity;
+    private Vector2 delayedPosition;
     private Rigidbody2D body;
     private BoxCollider2D collider;
     private int horizontal;
@@ -73,6 +74,7 @@ public class player : MonoBehaviour
         body = gameObject.GetComponent<Rigidbody2D>();
         collider = gameObject.GetComponent<BoxCollider2D>();
         body.fixedAngle = true;
+        body.position = delayedPosition;
         velocity = new Vector2(0.0f, 0.0f);
         horizontal = 0;
         direction = 1;
@@ -222,5 +224,12 @@ public class player : MonoBehaviour
         Debug.DrawRay(collider.bounds.center - new Vector3(collider.bounds.extents.x, collider.bounds.extents.y + checkBoxOffset), Vector2.right * collider.bounds.extents.x * 2, rayColor);
 
         isGrounded = raycastHit.collider != null;
+    }
+
+    public void SetPosition(Vector2 pos)
+    {
+        if (body)
+            body.position = pos;
+        delayedPosition = pos;
     }
 }

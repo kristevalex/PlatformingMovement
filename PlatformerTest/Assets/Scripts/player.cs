@@ -14,13 +14,19 @@ public class Player : MonoBehaviour
     private bool downPressed;
     private bool dashPressed;
     private int jumpFrames;
+    private int wallJumpFrames;
     private int dashFrames;
     private bool isGrounded;
+    private bool isWalledL;
+    private bool isWalledR;
+    private int wallJumpDir;
+    private bool jumpInputUsed;
     private int framesSinceGround;
     private bool jumpButtonActive;
     private bool doubleJumpActive;
     private bool dashButtonActive;
     private bool dashFromGround;
+    private float checkBoxOffset = 0.05f;
 
     [SerializeField]
     private LayerMask platformLayer;
@@ -35,10 +41,6 @@ public class Player : MonoBehaviour
 
     [Header("Vertical movement")]
     [SerializeField]
-    private float maxRizeSpeed;
-    [SerializeField]
-    private float doubleJumpSpeed;
-    [SerializeField]
     private float maxFallSpeed;
     [SerializeField]
     private float maxQuickFallSpeed;
@@ -46,10 +48,28 @@ public class Player : MonoBehaviour
     private float decVert;
     [SerializeField]
     private float accVert;
+
+    [Header("Jump movement")]
+    [SerializeField]
+    private float maxRizeSpeed;
     [SerializeField]
     private int maxJumpFrames;
     [SerializeField]
     private int maxFloatJumpFrames;
+
+    [Header("Double Jump movement")]
+    [SerializeField]
+    private float doubleJumpSpeed;
+
+    [Header("Wall Jump movement")]
+    [SerializeField]
+    private float maxWallJumpFrames;
+    [SerializeField]
+    private float wallJumpFirstFrames;
+    [SerializeField]
+    private bool wallRestoresDoubleJump;
+    [SerializeField]
+    private bool wallRestoresDash;
 
     [Header("Dash movement")]
     [SerializeField]
@@ -87,6 +107,7 @@ public class Player : MonoBehaviour
         dashButtonActive = false;
         dashFromGround = false;
         eps = 0.001f * maxSpeed / (accFrames + decFrames);
+        Input.ResetInputAxes();
     }
 
     private void FixedUpdate()
@@ -98,6 +119,9 @@ public class Player : MonoBehaviour
         velocity = body.velocity;
 
         isGroundedUpdate();
+        isWalledRUpdate();
+        isWalledLUpdate();
+
         horizontal = 0;
         if (Input.GetKey("'"))
             ++horizontal;
@@ -107,9 +131,11 @@ public class Player : MonoBehaviour
         downPressed = Input.GetKey(";");
         dashPressed = Input.GetKey("c");
 
+        if (!jumpPressed)
+            jumpInputUsed = false;
+       
         if (horizontal != 0 && (dashFrames <= 0 || dashFrames >= maxDashFrames))
             direction = horizontal;
-
 
         if (horizontal == 0)
         {
@@ -131,6 +157,8 @@ public class Player : MonoBehaviour
                 velocity.x = -maxSpeed;
         }
 
+        if (wallRestoresDoubleJump && (isWalledL || isWalledR))
+            doubleJumpActive = true;
         if (isGrounded)
         {
             framesSinceGround = 0;
@@ -151,16 +179,18 @@ public class Player : MonoBehaviour
             velocity.y = maxRizeSpeed;
             ++jumpFrames;
             jumpButtonActive = false;
+            jumpInputUsed = true;
         }
         else if (dashFrames <= 0 || dashFrames >= maxDashFrames)
         {
             velocity.y = Mathf.Max(velocity.y - ((velocity.y > 0) ? decVert : accVert), -((downPressed) ? maxQuickFallSpeed : maxFallSpeed));
 
-            if (jumpButtonActive && doubleJumpActive && jumpPressed)
+            if (jumpButtonActive && doubleJumpActive && jumpPressed && !isWalledR && !isWalledL && !jumpInputUsed)
             {
                 velocity.y = doubleJumpSpeed;
                 doubleJumpActive = false;
                 jumpButtonActive = false;
+                jumpInputUsed = true;
             }
 
             if (isGrounded)
@@ -177,6 +207,39 @@ public class Player : MonoBehaviour
             if (!isGrounded && jumpFrames == 0 && !groundDashJump)
                 jumpFrames = maxJumpFrames;
         }
+
+        if (!jumpInputUsed && jumpPressed)
+        {
+            if (isWalledR || isWalledL)
+            {
+                wallJumpDir = (isWalledL? -1 : 0) + (isWalledR? 1 : 0);
+                wallJumpFrames = 1;
+                jumpInputUsed = true;
+                velocity.y = maxRizeSpeed;
+                velocity.x = -wallJumpDir * maxSpeed;
+            }                
+        }
+        else if (wallJumpFrames < maxWallJumpFrames && wallJumpFrames > 0)
+        {
+            if (wallJumpFrames < wallJumpFirstFrames)
+            {
+                ++wallJumpFrames;
+                jumpInputUsed = true;
+                velocity.y = maxRizeSpeed;
+                velocity.x = -wallJumpDir * maxSpeed;
+            }
+            else if (jumpPressed)
+            {
+                ++wallJumpFrames;
+                jumpInputUsed = true;
+                velocity.y = maxRizeSpeed;
+            }
+            else
+                wallJumpFrames = 0;
+        }
+
+        if (wallJumpFrames >= maxWallJumpFrames)
+            wallJumpFrames = 0;
 
 
         if (((dashPressed && dashButtonActive) || dashFrames > 0) && dashFrames < maxDashFrames && dashFrames >= 0)
@@ -195,7 +258,7 @@ public class Player : MonoBehaviour
             if (dashFrames < 0)
                 ++dashFrames;
 
-            if ((isGrounded || dashFromGround) && dashFrames > 0)
+            if (((isGrounded || dashFromGround) || wallRestoresDash && (isWalledL || isWalledR)) && dashFrames > 0)
             {
                 dashFrames = -dashCooldownFrames;
                 dashFromGround = false;
@@ -210,7 +273,6 @@ public class Player : MonoBehaviour
 
     private void isGroundedUpdate()
     {
-        float checkBoxOffset = 0.05f;
         RaycastHit2D raycastHit = Physics2D.BoxCast(collider.bounds.center, collider.bounds.size, 0.0f, Vector2.down, checkBoxOffset, platformLayer);
 
         Color rayColor;
@@ -219,11 +281,39 @@ public class Player : MonoBehaviour
         else
             rayColor = Color.red;
 
-        Debug.DrawRay(collider.bounds.center + new Vector3(collider.bounds.extents.x, 0.0f), Vector2.down * (collider.bounds.extents.y + checkBoxOffset), rayColor);
-        Debug.DrawRay(collider.bounds.center - new Vector3(collider.bounds.extents.x, 0.0f), Vector2.down * (collider.bounds.extents.y + checkBoxOffset), rayColor);
         Debug.DrawRay(collider.bounds.center - new Vector3(collider.bounds.extents.x, collider.bounds.extents.y + checkBoxOffset), Vector2.right * collider.bounds.extents.x * 2, rayColor);
 
         isGrounded = raycastHit.collider != null;
+    }
+
+    private void isWalledRUpdate()
+    {
+        RaycastHit2D raycastHit = Physics2D.BoxCast(collider.bounds.center, collider.bounds.size, 0.0f, Vector2.right, checkBoxOffset, platformLayer);
+
+        Color rayColor;
+        if (raycastHit.collider != null)
+            rayColor = Color.green;
+        else
+            rayColor = Color.red;
+
+        Debug.DrawRay(collider.bounds.center + new Vector3(collider.bounds.extents.x + checkBoxOffset, collider.bounds.extents.y), Vector2.down * collider.bounds.extents.y * 2, rayColor);
+
+        isWalledR = raycastHit.collider != null;
+    }
+
+    private void isWalledLUpdate()
+    {
+        RaycastHit2D raycastHit = Physics2D.BoxCast(collider.bounds.center, collider.bounds.size, 0.0f, Vector2.left, checkBoxOffset, platformLayer);
+
+        Color rayColor;
+        if (raycastHit.collider != null)
+            rayColor = Color.green;
+        else
+            rayColor = Color.red;
+
+        Debug.DrawRay(collider.bounds.center + new Vector3(-collider.bounds.extents.x - checkBoxOffset, collider.bounds.extents.y), Vector2.down * collider.bounds.extents.y * 2, rayColor);
+
+        isWalledL = raycastHit.collider != null;
     }
 
     public void SetPosition(Vector2 pos)

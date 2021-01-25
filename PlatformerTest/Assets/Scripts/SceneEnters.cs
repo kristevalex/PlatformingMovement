@@ -15,8 +15,6 @@ public class SceneEnters : MonoBehaviour
 
     void Start()
     {
-        Debug.Log("" + player);
-        Debug.Log("" + enterances[enteranceId].position.position);
         player.SetPosition(enterances[enteranceId].position.position);
         framesSinceEnter = 0;
         enterAnimationOver = true;

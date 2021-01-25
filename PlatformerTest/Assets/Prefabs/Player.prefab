@@ -149,14 +149,18 @@ MonoBehaviour:
   maxSpeed: 9
   accFrames: 9
   decFrames: 3
-  maxRizeSpeed: 18
-  doubleJumpSpeed: 25
   maxFallSpeed: 25
   maxQuickFallSpeed: 40
   decVert: 1.9
   accVert: 1.6
+  maxRizeSpeed: 18
   maxJumpFrames: 14
   maxFloatJumpFrames: 3
+  doubleJumpSpeed: 25
+  maxWallJumpFrames: 13
+  wallJumpFirstFrames: 5
+  wallRestoresDoubleJump: 1
+  wallRestoresDash: 1
   maxDashSpeed: 30
   maxDashFrames: 9
   dashCooldownFrames: 15

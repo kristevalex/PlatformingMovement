@@ -4,6 +4,8 @@ using UnityEngine;
 public class SceneExitInfo : MonoBehaviour
 {
     [SerializeField]
+    SceneTransitions sceneTransitions;
+    [SerializeField]
     string nextSceneName;
     [SerializeField]
     int nextSceneEnterenceId;
@@ -13,7 +15,8 @@ public class SceneExitInfo : MonoBehaviour
         if (collision.GetComponent<Player>())
         {
             SceneEnters.enteranceId = nextSceneEnterenceId;
-            SceneManager.LoadScene(nextSceneName);
+            sceneTransitions.LoadScene(nextSceneName);
+            //SceneManager.LoadScene(nextSceneName);
         }
     }
 }

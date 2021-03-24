@@ -10,9 +10,6 @@ public class Player : MonoBehaviour
     private BoxCollider2D collider;
     private int horizontal;
     private int direction;
-    private bool jumpPressed;
-    private bool downPressed;
-    private bool dashPressed;
     private int jumpFrames;
     private int wallJumpFrames;
     private int dashFrames;
@@ -27,6 +24,13 @@ public class Player : MonoBehaviour
     private bool dashButtonActive;
     private bool dashFromGround;
     private float checkBoxOffset = 0.05f;
+
+    private static bool downPressed;
+    private static bool upPressed;
+    private static bool leftPressed;
+    private static bool rightPressed;
+    private static bool dashPressed;
+    private static bool jumpPressed;
 
     [SerializeField]
     private LayerMask platformLayer;
@@ -110,8 +114,41 @@ public class Player : MonoBehaviour
         Input.ResetInputAxes();
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
+        if (Input.GetKeyDown("'"))
+            rightPressed = true;
+        if (Input.GetKeyUp("'"))
+            rightPressed = false;
+
+        if (Input.GetKeyDown("l"))
+            leftPressed = true;
+        if (Input.GetKeyUp("l"))
+            leftPressed = false;
+
+        if (Input.GetKeyDown("p"))
+            upPressed = true;
+        if (Input.GetKeyUp("p"))
+            upPressed = false;
+
+        if (Input.GetKeyDown(";"))
+            downPressed = true;
+        if (Input.GetKeyUp(";"))
+            downPressed = false;
+
+        if (Input.GetKeyDown("z"))
+            jumpPressed = true;
+        if (Input.GetKeyUp("z"))
+            jumpPressed = false;
+
+        if (Input.GetKeyDown("c"))
+            dashPressed = true;
+        if (Input.GetKeyUp("c"))
+            dashPressed = false;
+    }
+
+    private void FixedUpdate()
+    { 
         if (isGrounded)
             velocity.y = Mathf.Max(velocity.y, 0.0f);
         else if (Mathf.Abs(velocity.y - body.velocity.y) > eps && jumpFrames > 0)
